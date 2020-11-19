@@ -7,33 +7,22 @@ os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
 import tensorflow
 import random
 import matplotlib.pyplot as plt
+import copy
 
 
 class DQNAgent:
-    def __init__(self, env, replay_size, merge_freq, save_dir):
+    def __init__(self, env, tf_model, replay_size, merge_freq, save_dir):
         self.env = env
         self.replay_size = replay_size
         self.merge_freq = merge_freq
         self.save_dir = save_dir
 
         self.replay = collections.deque(maxlen=replay_size)
-        
-        self.model = self._create_model()
-        self.target_model = self._create_model()
-        self.target_model.set_weights(self.model.get_weights())
+
+        self.model = copy.copy(tf_model)
+        self.target_model = copy.copy(tf_model)
 
         self.merge_cntr = 0
-
-    def _create_model(self):
-        model = tensorflow.keras.models.Sequential()
-        try:
-            model.load(self.save_dir)
-        except:
-            model.add(tensorflow.keras.layers.Dense(self.env.obs_s * 10, input_shape=(self.env.obs_s,), activation="sigmoid"))
-            model.add(tensorflow.keras.layers.Dense(self.env.obs_s * 10, activation="sigmoid"))
-            model.add(tensorflow.keras.layers.Dense(self.env.act_s, activation="linear"))
-            model.compile(loss="mse", optimizer=tensorflow.keras.optimizers.Adam(learning_rate=0.001), metrics=["accuracy"])
-        return model
 
     def fit(self, episodes, batch_size, gamma, epsilon, epsilon_min, epsilon_decay):
         statistics = [[], []]
