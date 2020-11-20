@@ -1,9 +1,5 @@
 import numpy
 import collections
-
-import os
-os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
-
 import tensorflow
 import random
 import copy
@@ -77,7 +73,7 @@ class DQNAgent:
             X.append(state)
             Y.append(m_qs)
 
-        self.model.train_on_batch(numpy.array(X), y=numpy.array(Y)) # , batch_size=batch_size, verbose=0, shuffle=False)
+        self.model.train_on_batch(numpy.array(X), y=numpy.array(Y))
 
         if terminated:
             self.merge_cntr += 1
