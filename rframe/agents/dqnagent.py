@@ -19,11 +19,11 @@ class DQNAgent:
 
         self.merge_cntr = 0
 
-    def fit(self, episodes, batch_size, gamma, epsilon, epsilon_min, epsilon_decay):
+    def fit(self, episodes, batch_size, gamma, epsilon, epsilon_min, epsilon_decay, callbacks=[]):
         for episode in range(episodes):
             state, reward, done = self.env.reset(), 0, False
 
-            total_reward = 0
+            step = 0
             while not done:
                 if numpy.random.random() > epsilon:
                     action = numpy.argmax(self._predict(state))
@@ -31,7 +31,6 @@ class DQNAgent:
                     action = numpy.random.randint(0, self.env.act_s)
 
                 new_state, reward, done = self.env.step(action)
-                total_reward += reward
 
                 if episode % 100 == 0:
                     self.env.render()
@@ -39,8 +38,13 @@ class DQNAgent:
                 self.replay.append([state, action, new_state, reward, done])
                 self._train(batch_size, gamma, done)
 
+                callback_data = [episode, epsilon, step, reward]
+                for callback in callbacks:
+                    callback.call(callback_data)
+
                 state = new_state
-                print(f"Episode: {episode} | Epsilon: {round(epsilon, 3)} | Reward: {total_reward}", end='\r')
+                step += 1
+                print(f"Episode: {episode} | Epsilon: {round(epsilon, 3)}", end='\r')
             print()
             self._save()
 
