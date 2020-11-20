@@ -1,43 +1,25 @@
 import numpy
 import collections
-
-import os
-os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
-
 import tensorflow
 import random
-import matplotlib.pyplot as plt
+import copy
 
 
 class DQNAgent:
-    def __init__(self, env, replay_size, merge_freq, save_dir):
+    def __init__(self, env, tf_model, replay_size, merge_freq, save_dir):
         self.env = env
         self.replay_size = replay_size
         self.merge_freq = merge_freq
         self.save_dir = save_dir
 
         self.replay = collections.deque(maxlen=replay_size)
-        
-        self.model = self._create_model()
-        self.target_model = self._create_model()
-        self.target_model.set_weights(self.model.get_weights())
+
+        self.model = copy.copy(tf_model)
+        self.target_model = copy.copy(tf_model)
 
         self.merge_cntr = 0
 
-    def _create_model(self):
-        model = tensorflow.keras.models.Sequential()
-        try:
-            model.load(self.save_dir)
-        except:
-            model.add(tensorflow.keras.layers.Dense(self.env.obs_s * 10, input_shape=(self.env.obs_s,), activation="sigmoid"))
-            model.add(tensorflow.keras.layers.Dense(self.env.obs_s * 10, activation="sigmoid"))
-            model.add(tensorflow.keras.layers.Dense(self.env.act_s, activation="linear"))
-            model.compile(loss="mse", optimizer=tensorflow.keras.optimizers.Adam(learning_rate=0.001), metrics=["accuracy"])
-        return model
-
     def fit(self, episodes, batch_size, gamma, epsilon, epsilon_min, epsilon_decay):
-        statistics = [[], []]
-
         for episode in range(episodes):
             state, reward, done = self.env.reset(), 0, False
 
@@ -65,12 +47,6 @@ class DQNAgent:
             if epsilon >= epsilon_min:
                 epsilon *= epsilon_decay
 
-            statistics[0].append(episode)
-            statistics[1].append(total_reward)
-
-        plt.plot(*statistics)
-        plt.show()
-
     def _train(self, batch_size, gamma, terminated):
         if len(self.replay) < self.replay_size:
             return
@@ -97,7 +73,7 @@ class DQNAgent:
             X.append(state)
             Y.append(m_qs)
 
-        self.model.train_on_batch(numpy.array(X), y=numpy.array(Y)) # , batch_size=batch_size, verbose=0, shuffle=False)
+        self.model.train_on_batch(numpy.array(X), y=numpy.array(Y))
 
         if terminated:
             self.merge_cntr += 1
